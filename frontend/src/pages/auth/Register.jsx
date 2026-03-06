@@ -84,6 +84,44 @@ export default function Register() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const userParam = params.get("user");
+    const oauthError = params.get("oauth_error");
+    const oauthErrorDetail = params.get("oauth_error_detail");
+
+    if (oauthError) {
+      const oauthErrorMessages = {
+        missing_code: "Google did not return an authorization code.",
+        token_exchange_failed: "Google token exchange failed. Check OAuth client secret and redirect URI.",
+        missing_access_token: "Google token response did not include an access token.",
+        profile_fetch_failed: "Unable to fetch Google profile details.",
+        invalid_profile: "Google profile is missing required fields (email or id).",
+        google_callback_failed: "Google callback failed on server."
+      };
+
+      const friendlyMessage = oauthErrorMessages[oauthError] || `Google sign-in failed (${oauthError}).`;
+      const detailMessage = oauthErrorDetail ? ` Details: ${oauthErrorDetail}` : "";
+      setErrorMsg(`${friendlyMessage}${detailMessage}`);
+      const cleanedUrl = `${window.location.origin}${window.location.pathname}`;
+      window.history.replaceState({}, document.title, cleanedUrl);
+      return;
+    }
+
+    if (token && userParam) {
+      try {
+        const userData = JSON.parse(userParam);
+        login(userData, token);
+        const cleanedUrl = `${window.location.origin}${window.location.pathname}`;
+        window.history.replaceState({}, document.title, cleanedUrl);
+        navigate(`/${userData.role}`, { replace: true });
+      } catch {
+        setErrorMsg("Unable to complete OAuth login. Please try again.");
+      }
+    }
+  }, [login, navigate]);
+
   const toggleTheme = () => setDarkMode((prev) => !prev);
 
   useEffect(() => {
@@ -183,13 +221,14 @@ export default function Register() {
   };
 
   const handleOAuthRegister = async (provider) => {
+    const frontendOrigin = encodeURIComponent(window.location.origin);
     let url = '';
     if (provider === "Google") {
-      url = `${backendBaseUrl}/api/auth/google`;
+      url = `${backendBaseUrl}/api/auth/google?flow=register&frontend=${frontendOrigin}`;
     } else if (provider === "LinkedIn") {
-      url = `${backendBaseUrl}/api/auth/linkedin`;
+      url = `${backendBaseUrl}/api/auth/linkedin?flow=register&frontend=${frontendOrigin}`;
     } else if (provider === "GitHub") {
-      url = `${backendBaseUrl}/api/auth/github`;
+      url = `${backendBaseUrl}/api/auth/github?flow=register&frontend=${frontendOrigin}`;
     }
     window.location.href = url;
   };

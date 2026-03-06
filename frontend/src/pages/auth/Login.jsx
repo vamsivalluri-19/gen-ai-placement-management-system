@@ -148,13 +148,14 @@ export default function Login() {
   };
 
   const handleOAuthLogin = async (provider) => {
+    const frontendOrigin = encodeURIComponent(window.location.origin);
     let url = '';
     if (provider === "Google") {
-      url = `${backendBaseUrl}/api/auth/google`;
+      url = `${backendBaseUrl}/api/auth/google?flow=login&frontend=${frontendOrigin}`;
     } else if (provider === "LinkedIn") {
-      url = `${backendBaseUrl}/api/auth/linkedin`;
+      url = `${backendBaseUrl}/api/auth/linkedin?flow=login&frontend=${frontendOrigin}`;
     } else if (provider === "GitHub") {
-      url = `${backendBaseUrl}/api/auth/github`;
+      url = `${backendBaseUrl}/api/auth/github?flow=login&frontend=${frontendOrigin}`;
     }
     window.location.href = url;
   };

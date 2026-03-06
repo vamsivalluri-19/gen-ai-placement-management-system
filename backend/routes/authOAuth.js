@@ -8,6 +8,23 @@ const router = express.Router();
 
 const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
 
+const isAllowedFrontendOrigin = (origin) => {
+  if (!origin) return false;
+
+  let hostname = '';
+  try {
+    hostname = new URL(origin).hostname;
+  } catch (_error) {
+    return false;
+  }
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return true;
+  }
+
+  return /\.vercel\.app$/i.test(hostname);
+};
+
 const getBackendBaseUrl = (req) => {
   const configured = normalizeUrl(process.env.BACKEND_URL);
   if (configured) {
@@ -20,7 +37,54 @@ const getBackendBaseUrl = (req) => {
   return `${protocol}://${host}`;
 };
 
-const frontendBaseUrl = normalizeUrl(process.env.FRONTEND_URL) || 'http://localhost:5173';
+const configuredFrontendBaseUrl = normalizeUrl(process.env.FRONTEND_URL) || 'http://localhost:5173';
+
+const getFrontendBaseUrl = (req, state = null) => {
+  const stateFrontend = normalizeUrl(state?.frontend || '');
+  if (stateFrontend && isAllowedFrontendOrigin(stateFrontend)) {
+    return stateFrontend;
+  }
+
+  const requestedFrontend = normalizeUrl(req.query?.frontend || '');
+  if (requestedFrontend && isAllowedFrontendOrigin(requestedFrontend)) {
+    return requestedFrontend;
+  }
+
+  const referer = req.get('referer');
+  if (referer) {
+    try {
+      const refererOrigin = normalizeUrl(new URL(referer).origin);
+      if (isAllowedFrontendOrigin(refererOrigin)) {
+        return refererOrigin;
+      }
+    } catch (_error) {
+      // ignore malformed referer
+    }
+  }
+
+  return configuredFrontendBaseUrl;
+};
+
+const getFrontendPath = (state = null, req = null) => {
+  const flow = String(state?.flow || req?.query?.flow || 'login').toLowerCase();
+  return flow === 'register' ? '/register' : '/';
+};
+
+const encodeOAuthState = (payload) => {
+  const json = JSON.stringify(payload || {});
+  return Buffer.from(json, 'utf8').toString('base64url');
+};
+
+const decodeOAuthState = (value) => {
+  if (!value) return {};
+  try {
+    const decoded = Buffer.from(String(value), 'base64url').toString('utf8');
+    const parsed = JSON.parse(decoded);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_error) {
+    return {};
+  }
+};
 
 const requireEnv = (key, res) => {
   const value = process.env[key];
@@ -34,12 +98,12 @@ const requireEnv = (key, res) => {
   return value;
 };
 
-const redirectWithOauthError = (res, frontendBaseUrl, code, detail) => {
+const redirectWithOauthError = (res, frontendBaseUrl, frontendPath, code, detail) => {
   const params = new URLSearchParams({ oauth_error: code });
   if (detail) {
     params.set('oauth_error_detail', detail.slice(0, 500));
   }
-  return res.redirect(`${frontendBaseUrl}/?${params.toString()}`);
+  return res.redirect(`${frontendBaseUrl}${frontendPath}?${params.toString()}`);
 };
 
 const generateToken = (id, role) =>
@@ -98,7 +162,12 @@ router.get('/google', (req, res) => {
   const backendBaseUrl = getBackendBaseUrl(req);
   const redirectUri = encodeURIComponent(`${backendBaseUrl}/api/auth/google/callback`);
   const scope = encodeURIComponent('profile email');
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`);
+  const frontendBaseUrl = getFrontendBaseUrl(req);
+  const state = encodeOAuthState({
+    flow: String(req.query?.flow || 'login').toLowerCase(),
+    frontend: frontendBaseUrl
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`);
 });
 
 // Google OAuth Callback
@@ -110,8 +179,11 @@ router.get('/google/callback', (req, res) => {
       if (!clientId || !clientSecret) return;
 
       const { code } = req.query;
+      const state = decodeOAuthState(req.query?.state);
+      const frontendBaseUrl = getFrontendBaseUrl(req, state);
+      const frontendPath = getFrontendPath(state, req);
       if (!code) {
-        return redirectWithOauthError(res, frontendBaseUrl, 'missing_code', 'No authorization code received from Google');
+        return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'missing_code', 'No authorization code received from Google');
       }
 
       const backendBaseUrl = getBackendBaseUrl(req);
@@ -141,14 +213,14 @@ router.get('/google/callback', (req, res) => {
         } catch (_error) {
           // ignore parse issues and keep status fallback
         }
-        return redirectWithOauthError(res, frontendBaseUrl, 'token_exchange_failed', tokenErrorDetail);
+        return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'token_exchange_failed', tokenErrorDetail);
       }
 
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
       if (!accessToken) {
-        return redirectWithOauthError(res, frontendBaseUrl, 'missing_access_token', 'Google token response did not include access_token');
+        return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'missing_access_token', 'Google token response did not include access_token');
       }
 
       const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -167,7 +239,7 @@ router.get('/google/callback', (req, res) => {
         } catch (_error) {
           // ignore parse issues and keep status fallback
         }
-        return redirectWithOauthError(res, frontendBaseUrl, 'profile_fetch_failed', profileErrorDetail);
+        return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'profile_fetch_failed', profileErrorDetail);
       }
 
       const profile = await profileResponse.json();
@@ -177,7 +249,7 @@ router.get('/google/callback', (req, res) => {
       const avatar = profile.picture;
 
       if (!email || !googleId) {
-        return redirectWithOauthError(res, frontendBaseUrl, 'invalid_profile', 'Google profile is missing email or id');
+        return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'invalid_profile', 'Google profile is missing email or id');
       }
 
       const user = await getOrCreateOAuthUser({
@@ -199,10 +271,13 @@ router.get('/google/callback', (req, res) => {
       };
 
       const userParam = encodeURIComponent(JSON.stringify(safeUser));
-      return res.redirect(`${frontendBaseUrl}/?oauth=google&token=${encodeURIComponent(appToken)}&user=${userParam}`);
+      return res.redirect(`${frontendBaseUrl}${frontendPath}?oauth=google&token=${encodeURIComponent(appToken)}&user=${userParam}`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      return redirectWithOauthError(res, frontendBaseUrl, 'google_callback_failed', error?.message || 'Unknown callback error');
+      const state = decodeOAuthState(req.query?.state);
+      const frontendBaseUrl = getFrontendBaseUrl(req, state);
+      const frontendPath = getFrontendPath(state, req);
+      return redirectWithOauthError(res, frontendBaseUrl, frontendPath, 'google_callback_failed', error?.message || 'Unknown callback error');
     }
   })();
 });
@@ -212,6 +287,7 @@ router.get('/github', (req, res) => {
   const clientId = requireEnv('GITHUB_CLIENT_ID', res);
   if (!clientId) return;
 
+  const backendBaseUrl = getBackendBaseUrl(req);
   const redirectUri = encodeURIComponent(`${backendBaseUrl}/api/auth/github/callback`);
   res.redirect(`https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`);
 });
@@ -226,6 +302,7 @@ router.get('/linkedin', (req, res) => {
   const clientId = requireEnv('LINKEDIN_CLIENT_ID', res);
   if (!clientId) return;
 
+  const backendBaseUrl = getBackendBaseUrl(req);
   const redirectUri = encodeURIComponent(`${backendBaseUrl}/api/auth/linkedin/callback`);
   const scope = encodeURIComponent('r_liteprofile r_emailaddress');
   res.redirect(`https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`);
