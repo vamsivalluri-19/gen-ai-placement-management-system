@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Send, Inbox, Users, X, Loader, CheckCircle } from 'lucide-react';
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5001/api';
+import { API_BASE_URL } from '../config/apiBase';
 
 const EmailModal = ({ show, onClose, user, theme }) => {
   const [activeTab, setActiveTab] = useState('compose');

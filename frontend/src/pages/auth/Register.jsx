@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Mail, Lock, User, Phone, X, CheckCircle, ArrowRight, Sun, Moon, Eye, EyeOff } from "lucide-react";
 import { authAPI, oauthAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { BACKEND_BASE_URL } from "../../config/apiBase";
 
 const roleImages = {
   student: "https://img.freepik.com/premium-photo/graduation-boy-girl-class-room_1036975-32053.jpg",
@@ -12,7 +13,7 @@ const roleImages = {
 };
 
 export default function Register() {
-  const backendBaseUrl = (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, "");
+  const backendBaseUrl = BACKEND_BASE_URL;
   const [role, setRole] = useState("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

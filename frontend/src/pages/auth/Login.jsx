@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authAPI, oauthAPI } from "../../services/api";
+import { BACKEND_BASE_URL } from "../../config/apiBase";
 import {
   Sun,
   Moon,
@@ -41,7 +42,7 @@ const roleImages = {
 };
 
 export default function Login() {
-  const backendBaseUrl = (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, "");
+  const backendBaseUrl = BACKEND_BASE_URL;
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

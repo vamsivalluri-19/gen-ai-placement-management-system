@@ -62,8 +62,19 @@ const allowedOrigins = new Set([
   'http://10.57.3.1:5175'
 ]);
 
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.add(process.env.FRONTEND_URL);
+const addAllowedOrigin = (origin) => {
+  const value = (origin || '').trim().replace(/\/+$/, '');
+  if (value) {
+    allowedOrigins.add(value);
+  }
+};
+
+addAllowedOrigin(process.env.FRONTEND_URL);
+
+if (process.env.FRONTEND_URLS) {
+  process.env.FRONTEND_URLS
+    .split(',')
+    .forEach((origin) => addAllowedOrigin(origin));
 }
 
 const corsOptions = {

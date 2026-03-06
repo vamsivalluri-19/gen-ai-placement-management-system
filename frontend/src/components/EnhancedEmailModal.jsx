@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Send, Inbox, Users, X, Loader, CheckCircle, Search, ChevronDown, Plus, PlusCircle } from 'lucide-react';
 import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import { API_BASE_URL } from '../config/apiBase';
 
 const EnhancedEmailModal = ({ show, onClose, user, theme }) => {
   // Default user fallback for compose
