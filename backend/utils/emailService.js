@@ -3,13 +3,28 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+
 // Create transporter
 const createTransporter = () => {
+  if (process.env.SMTP_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASSWORD
+      }
+    });
+  }
+
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+      user: EMAIL_USER,
+      pass: EMAIL_PASSWORD
     }
   });
 };
@@ -17,7 +32,7 @@ const createTransporter = () => {
 // Send email notification
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
       console.warn('Email credentials not configured. Skipping email notification.');
       return { success: false, message: 'Email not configured' };
     }
@@ -25,7 +40,7 @@ export const sendEmail = async ({ to, subject, html }) => {
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: `GenAI Placement System <${process.env.EMAIL_USER}>`,
+      from: `GenAI Placement System <${EMAIL_USER}>`,
       to,
       subject,
       html
