@@ -6,8 +6,21 @@ const router = express.Router();
 
 // Placeholder: Replace with real OAuth logic and passport/simple-oauth2 if needed
 
-const backendBaseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5001}`;
-const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
+
+const getBackendBaseUrl = (req) => {
+  const configured = normalizeUrl(process.env.BACKEND_URL);
+  if (configured) {
+    return configured;
+  }
+
+  const forwardedProto = (req.headers['x-forwarded-proto'] || '').toString().split(',')[0].trim();
+  const protocol = forwardedProto || req.protocol || 'http';
+  const host = req.get('host');
+  return `${protocol}://${host}`;
+};
+
+const frontendBaseUrl = normalizeUrl(process.env.FRONTEND_URL) || 'http://localhost:5173';
 
 const requireEnv = (key, res) => {
   const value = process.env[key];
@@ -74,6 +87,7 @@ router.get('/google', (req, res) => {
   const clientId = requireEnv('GOOGLE_CLIENT_ID', res);
   if (!clientId) return;
 
+  const backendBaseUrl = getBackendBaseUrl(req);
   const redirectUri = encodeURIComponent(`${backendBaseUrl}/api/auth/google/callback`);
   const scope = encodeURIComponent('profile email');
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`);
@@ -92,6 +106,7 @@ router.get('/google/callback', (req, res) => {
         return res.redirect(`${frontendBaseUrl}/?oauth_error=missing_code`);
       }
 
+      const backendBaseUrl = getBackendBaseUrl(req);
       const redirectUri = `${backendBaseUrl}/api/auth/google/callback`;
 
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
