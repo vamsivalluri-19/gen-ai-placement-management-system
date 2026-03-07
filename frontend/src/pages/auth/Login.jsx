@@ -962,7 +962,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={openForgotModal}
-                  className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                  className="text-blue-700 dark:text-blue-200 hover:underline font-bold"
                 >
                   Forgot Password?
                 </button>
@@ -1015,7 +1015,7 @@ export default function Login() {
               Don't have an account?
               <Link
                 to="/register"
-                className="text-blue-600 dark:text-blue-400 ml-1 font-semibold hover:underline"
+                className="text-blue-700 dark:text-blue-200 ml-1 font-bold hover:underline"
               >
                 Register Now
               </Link>
