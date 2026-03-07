@@ -2196,7 +2196,7 @@ const StaffDashboard = () => {
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <img
-                    src={staffProfile.image || `httpsapi.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'user'}`}
+                    src={staffProfile.avatar || staffProfile.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'user'}`}
                     alt={staffProfile.name}
                     className="w-32 h-32 rounded-full object-cover border-4 border-purple-500/20"
                   />
@@ -2211,7 +2211,10 @@ const StaffDashboard = () => {
                           if (file) {
                             const reader = new FileReader();
                             reader.onload = (event) => {
-                              setStaffProfile({ ...staffProfile, image: event.target.result });
+                              setStaffProfile({ ...staffProfile, avatar: event.target.result, image: event.target.result });
+                              if (user) {
+                                user.avatar = event.target.result;
+                              }
                             };
                             reader.readAsDataURL(file);
                           }
