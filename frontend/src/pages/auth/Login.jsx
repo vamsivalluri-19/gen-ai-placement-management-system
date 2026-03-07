@@ -858,7 +858,7 @@ export default function Login() {
                 LOGIN
               </h1>
               <p
-                className="mt-3 text-sm uppercase font-semibold text-white dark:text-blue-200"
+                className="mt-3 text-sm uppercase font-semibold text-gray-900 dark:text-blue-200"
               >
                 {role.charAt(0).toUpperCase() + role.slice(1)} Authentication
               </p>
@@ -894,7 +894,7 @@ export default function Login() {
               </div>
 
               <div className="relative">
-                <label className="block text-xs font-semibold mb-2 text-white dark:text-blue-200">
+                <label className="block text-xs font-semibold mb-2 text-gray-900 dark:text-blue-200">
                   Email Address
                 </label>
                 <input
