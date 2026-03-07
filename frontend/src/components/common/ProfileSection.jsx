@@ -35,7 +35,11 @@ const ProfileSection = ({ user, onLogout, isDark = false, colors = null }) => {
           <ImageCropUpload
             currentImage={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'user'}`}
             userName={user?.name || 'User'}
-            onImageUpdate={() => {/* Handle update */}}
+            onImageUpdate={(newAvatar) => {
+              if (user) {
+                user.avatar = newAvatar;
+              }
+            }}
           />
         </div>
 
