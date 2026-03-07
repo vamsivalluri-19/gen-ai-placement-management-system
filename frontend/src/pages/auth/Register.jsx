@@ -539,7 +539,9 @@ export default function Register() {
             <div className="relative z-10 text-center flex flex-col items-center gap-6">
               <div className="w-64 h-72 rounded-xl overflow-hidden shadow-2xl">
                 <img 
-                  src={roleImages[role]} 
+                  src={roleImages[role] && roleImages[role].startsWith('/uploads/')
+                    ? `${process.env.REACT_APP_API_BASE_URL || import.meta.env.VITE_BACKEND_URL}${roleImages[role]}`
+                    : roleImages[role]}
                   alt={`${role} role`}
                   className="w-full h-full object-cover"
                 />
@@ -885,8 +887,8 @@ export default function Register() {
 
             {/* LOGIN LINK */}
             <p className={`mt-4 text-sm text-center ${darkMode ? 'text-slate-200' : 'text-gray-900'}`}>
-              Already have an account?
-              <Link to="/" className="text-blue-600 font-semibold ml-1 hover:underline">
+              <span style={{color:'white', fontWeight:'bold', textShadow:'0 1px 4px #000'}}>Already have an account?</span>
+              <Link to="/" className="text-blue-400 font-bold ml-1 hover:underline" style={{textShadow:'0 1px 4px #000'}}>
                 Login here
               </Link>
             </p>
