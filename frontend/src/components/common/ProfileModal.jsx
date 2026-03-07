@@ -56,7 +56,12 @@ const ProfileModal = ({ user, isOpen, onClose, isDark = false, colors = null }) 
             <ImageCropUpload
               currentImage={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || 'user'}`}
               userName={user?.name || 'User'}
-              onImageUpdate={(newAvatar) => {}}
+              onImageUpdate={(newAvatar) => {
+                if (user) {
+                  user.avatar = newAvatar;
+                }
+                setProfileData({ ...profileData, avatar: newAvatar });
+              }}
             />
           </div>
 
