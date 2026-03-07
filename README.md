@@ -1,7 +1,10 @@
+
 # gen-ai-placement-management-system
+
 AI-powered placement management system with role-based dashboards (Student, Staff, HR, Admin), smart hiring workflows, OTP/OAuth authentication, and analytics built using MERN.
 
 ## Features
+
 - Role-based dashboards for Students, Staff, HR, and Admin
 - Smart hiring workflows and job requisition management
 - Detailed application forms and profile completion tracking
@@ -12,6 +15,7 @@ AI-powered placement management system with role-based dashboards (Student, Staf
 - Resume analysis with AI
 
 ## Technologies Used
+
 - MongoDB, Express.js, React.js, Node.js (MERN stack)
 - Tailwind CSS for UI styling
 - Vite for frontend build
@@ -19,14 +23,16 @@ AI-powered placement management system with role-based dashboards (Student, Staf
 - JWT, OAuth for authentication
 
 ## Setup Instructions
+
 1. Clone the repository
 2. Install dependencies in both `backend` and `frontend` folders
 3. Configure environment variables as needed
 4. Run backend and frontend servers
 
 ## Contributors
+
 - Vamsi Valluri
-... (Add more names as needed)
 
 ## License
+
 MIT License
